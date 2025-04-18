@@ -1,0 +1,87 @@
+/* Tailwind CSS imports */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for the application */
+body {
+  @apply antialiased text-gray-800 bg-gray-50;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Code syntax highlighting styles */
+.code-editor {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Animation for step transitions */
+.step-transition {
+  @apply transition-opacity duration-300;
+}
+
+.step-enter {
+  @apply opacity-0;
+}
+
+.step-enter-active {
+  @apply opacity-100;
+}
+
+.step-exit {
+  @apply opacity-100;
+}
+
+.step-exit-active {
+  @apply opacity-0;
+}
+
+/* Custom styles for message editor */
+.bit-cell {
+  @apply h-6 border border-gray-300 rounded-sm flex items-center justify-center text-xs cursor-pointer transition-colors;
+}
+
+.bit-cell:hover {
+  @apply bg-blue-200;
+}
+
+.bit-cell.selected {
+  @apply bg-blue-500 text-white;
+}
+
+/* Highlight effect for DBC parser */
+.highlight-row {
+  @apply transition-colors duration-300;
+}
+
+.highlight-row:hover {
+  @apply bg-blue-50;
+}
+
+/* Hide scrollbar for clean UI in specific components */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
