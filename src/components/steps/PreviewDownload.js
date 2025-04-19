@@ -1,7 +1,7 @@
 // src/components/steps/PreviewDownload.js
-
+import { useMemo } from 'react'; // Import useMemo for optimization
 // Import the code generator utility
-import { downloadZIP } from '../../utils/codeGenerator';
+import codeGenerator, { downloadZIP } from '../../utils/codeGenerator'; // Import default export
 
 
 export default function PreviewDownload({ config, onPrevious }) {
@@ -14,15 +14,27 @@ export default function PreviewDownload({ config, onPrevious }) {
         alert('Error generating CAN stack. Please try again.');
       }
     };
-    
-    // Example of generated files (this would be dynamically generated in a real application)
-    const generatedFiles = [
-      { name: 'main.c', description: 'Main application code initializing the CAN driver' },
-      { name: 'can_cfg.h', description: 'Configuration header for CAN settings' },
-      { name: 'can_driver.c', description: 'CAN driver implementation' },
-      { name: 'can_driver.h', description: 'CAN driver header with API definitions' },
-      { name: 'project.json', description: 'Project configuration and message definitions' },
-    ];
+
+    // Dynamically generate the list of files based on the config
+    const generatedFiles = useMemo(() => {
+      if (config.mcu && config.os) {
+        try {
+          const filesObject = codeGenerator.generateCode(config);
+          return Object.keys(filesObject).map(name => ({
+            name,
+            // Basic description based on file type, can be enhanced later
+            description: name.endsWith('.c') ? 'C source file' :
+                         name.endsWith('.h') ? 'C header file' :
+                         name.endsWith('.md') ? 'Markdown documentation' :
+                         'Generated file'
+          }));
+        } catch (error) {
+          console.error("Error generating file list:", error);
+          return []; // Return empty list on error
+        }
+      }
+      return []; // Return empty list if config is incomplete
+    }, [config]); // Recalculate only when config changes
   
     // Render the preview and download section
     // This section will show the configuration summary and generated files
