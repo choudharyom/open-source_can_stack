@@ -1,17 +1,26 @@
 // src/components/steps/PreviewDownload.js
-import { useMemo } from 'react'; // Import useMemo for optimization
+import { useMemo, useState } from 'react'; // Import useMemo and useState
 // Import the code generator utility
 import codeGenerator, { downloadZIP } from '../../utils/codeGenerator'; // Import default export
 
-
 export default function PreviewDownload({ config, onPrevious }) {
+    const [isGenerating, setIsGenerating] = useState(false); // Moved useState inside the component
+
     // Function to handle the download process
     const handleDownload = async () => {
-      const success = await downloadZIP(config);
-      if (success) {
-        alert('Your CAN stack has been successfully generated and downloaded!');
-      } else {
+      setIsGenerating(true);
+      try {
+        const success = await downloadZIP(config);
+        if (success) {
+          alert('Your CAN stack has been successfully generated and downloaded!');
+        } else {
+          alert('Error generating CAN stack. Please try again.');
+        }
+      } catch (error) {
+        console.error('Download error:', error);
         alert('Error generating CAN stack. Please try again.');
+      } finally {
+        setIsGenerating(false);
       }
     };
 
@@ -117,18 +126,22 @@ export default function PreviewDownload({ config, onPrevious }) {
           <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={handleDownload}
+              disabled={isGenerating}
               className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition flex items-center justify-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-                Download ZIP
-              </button>
-            <button
-              onClick={onPrevious}
-              className="bg-gray-200 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-300 transition focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
-              Back
+              {isGenerating ? (
+                <>
+                  <LoadingSpinner size="small" text={null} />
+                  <span>Generating ZIP...</span>
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  <span>Download ZIP</span>
+                </>
+              )}
             </button>
           </div>
         </div>

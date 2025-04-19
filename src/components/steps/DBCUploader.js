@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import LoadingSpinner from '../LoadingSpinner';
 
 export default function DBCUploader({ config, updateConfig, onNext, onPrevious }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dbcSignals, setDbcSignals] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [parseError, setParseError] = useState(null);
-  
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -230,9 +231,8 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
       </div>
       
       {isProcessing && (
-        <div className="flex justify-center my-6">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-700">Processing DBC file...</span>
+        <div className="my-6">
+          <LoadingSpinner text="Processing DBC file..." />
         </div>
       )}
       
@@ -370,15 +370,17 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
       )}
       
       <div className="mt-6 flex justify-between">
-        <button
+      <button
           onClick={onPrevious}
           className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+          disabled={isProcessing}
         >
           Previous
         </button>
         <button
           onClick={onNext}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          disabled={isProcessing}
         >
           {config.dbcFile ? 'Next' : 'Skip (No DBC File)'}
         </button>
