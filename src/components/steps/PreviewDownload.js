@@ -1,5 +1,6 @@
 // src/components/steps/PreviewDownload.js
 import { useMemo, useState } from 'react'; // Import useMemo and useState
+import LoadingSpinner from '../LoadingSpinner'; // Import LoadingSpinner
 // Import the code generator utility
 import codeGenerator, { downloadZIP } from '../../utils/codeGenerator'; // Import default export
 
