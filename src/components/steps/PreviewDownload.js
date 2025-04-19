@@ -1,4 +1,9 @@
 // src/components/steps/PreviewDownload.js
+
+// Import the code generator utility
+import { downloadZIP } from '../../utils/codeGenerator';
+
+
 export default function PreviewDownload({ config, onPrevious }) {
     // Placeholder for download functionality
     const handleDownload = () => {

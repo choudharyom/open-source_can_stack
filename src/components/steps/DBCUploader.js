@@ -3,6 +3,8 @@ import { useState } from 'react';
 export default function DBCUploader({ config, updateConfig, onNext, onPrevious }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dbcSignals, setDbcSignals] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [parseError, setParseError] = useState(null);
   
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -23,24 +25,101 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
       if (file.name.endsWith('.dbc')) {
         handleFileSelect(file);
       } else {
-        alert('Please upload a .dbc file');
+        setParseError('Please upload a .dbc file');
       }
     }
   };
   
   const handleFileSelect = (file) => {
-    updateConfig('dbcFile', file);
+    if (file.size > 10 * 1024 * 1024) {
+      setParseError('File size exceeds 10MB limit');
+      return;
+    }
     
-    // This is a simulated DBC parsing - in a real app, you would actually parse the file
-    setTimeout(() => {
-      // Simulated DBC parsing results
-      setDbcSignals([
-        { id: '0x100', name: 'Engine Status', signals: ['EngineRPM', 'EngineTemp', 'ThrottlePosition'] },
-        { id: '0x200', name: 'Vehicle Speed', signals: ['Speed', 'Acceleration'] },
-        { id: '0x300', name: 'Battery Status', signals: ['Voltage', 'Current', 'Temperature'] },
-        { id: '0x400', name: 'Brake System', signals: ['BrakePressure', 'ABSActive'] },
-      ]);
-    }, 1000);
+    updateConfig('dbcFile', file);
+    setIsProcessing(true);
+    setParseError(null);
+    
+    // Read file content
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target.result;
+        const parsedData = parseDBC(content);
+        setDbcSignals(parsedData);
+        setIsProcessing(false);
+      } catch (error) {
+        setParseError(`Error parsing DBC file: ${error.message}`);
+        setIsProcessing(false);
+      }
+    };
+    
+    reader.onerror = () => {
+      setParseError('Error reading file');
+      setIsProcessing(false);
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  const parseDBC = (content) => {
+    // This is a simplified DBC parser - in a real app, you'd use a more robust library
+    const messages = [];
+    const lines = content.split('\n');
+    
+    let currentMessage = null;
+    
+    for (const line of lines) {
+      // Parse message definition
+      if (line.startsWith('BO_ ')) {
+        // Format: BO_ message_id message_name: message_length sender
+        const parts = line.match(/BO_ (\d+) ([^:]+): (\d+) ([^\s]+)/);
+        if (parts) {
+          const id = parseInt(parts[1]);
+          const name = parts[2].trim();
+          const length = parseInt(parts[3]);
+          
+          currentMessage = {
+            id: `0x${id.toString(16).toUpperCase()}`,
+            name,
+            dlc: length,
+            signals: []
+          };
+          
+          messages.push(currentMessage);
+        }
+      }
+      
+      // Parse signal definition
+      else if (line.startsWith(' SG_ ') && currentMessage) {
+        // Format: SG_ signal_name : start_bit|length@byte_order factor offset range unit receiver
+        const parts = line.match(/ SG_ ([^ ]+) : (\d+)\|(\d+)@(\d+)([+-]) \(([^,]+),([^)]+)\) \[([^|]*)\|([^]]*)\] "([^"]*)" (.*)/);
+        
+        if (parts) {
+          const signalName = parts[1];
+          const startBit = parseInt(parts[2]);
+          const length = parseInt(parts[3]);
+          const byteOrder = parts[4] === '0' ? 'little_endian' : 'big_endian';
+          const isSigned = parts[5] === '-';
+          const factor = parseFloat(parts[6]);
+          const offset = parseFloat(parts[7]);
+          const unit = parts[10];
+          
+          currentMessage.signals.push({
+            name: signalName,
+            startBit,
+            length,
+            byteOrder,
+            isSigned,
+            factor,
+            offset,
+            unit
+          });
+        }
+      }
+    }
+    
+    return messages;
   };
   
   const handleFileInputChange = (e) => {
@@ -48,7 +127,45 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
     if (file && file.name.endsWith('.dbc')) {
       handleFileSelect(file);
     } else if (file) {
-      alert('Please upload a .dbc file');
+      setParseError('Please upload a .dbc file');
+    }
+  };
+  
+  const importMessage = (message) => {
+    // Check if message ID already exists
+    const exists = config.messages.some(m => m.id === message.id);
+    
+    if (exists) {
+      if (!confirm(`A message with ID ${message.id} already exists. Replace it?`)) {
+        return;
+      }
+      
+      // Filter out existing message with same ID
+      const filteredMessages = config.messages.filter(m => m.id !== message.id);
+      updateConfig('messages', [...filteredMessages, message]);
+    } else {
+      updateConfig('messages', [...config.messages, message]);
+    }
+  };
+  
+  const importAllMessages = () => {
+    // Check for duplicates
+    const existingIds = new Set(config.messages.map(m => m.id));
+    const newMessages = dbcSignals.filter(m => !existingIds.has(m.id));
+    const duplicates = dbcSignals.filter(m => existingIds.has(m.id));
+    
+    if (duplicates.length > 0) {
+      if (confirm(`${duplicates.length} messages have duplicate IDs. Replace existing messages?`)) {
+        // Replace all duplicates
+        const filteredMessages = config.messages.filter(m => !dbcSignals.some(dbcMsg => dbcMsg.id === m.id));
+        updateConfig('messages', [...filteredMessages, ...dbcSignals]);
+      } else {
+        // Only add non-duplicates
+        updateConfig('messages', [...config.messages, ...newMessages]);
+      }
+    } else {
+      // No duplicates, add all
+      updateConfig('messages', [...config.messages, ...dbcSignals]);
     }
   };
   
@@ -79,7 +196,7 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
               d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
             />
           </svg>
-          <div className="mt-4 flex text-sm text-gray-600">
+          <div className="mt-4 flex text-sm text-gray-600 justify-center">
             <label
               htmlFor="file-upload"
               className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
@@ -104,11 +221,33 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
             </div>
           )}
         </div>
+        
+        {parseError && (
+          <div className="mt-2 text-sm text-red-600">
+            {parseError}
+          </div>
+        )}
       </div>
+      
+      {isProcessing && (
+        <div className="flex justify-center my-6">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-700">Processing DBC file...</span>
+        </div>
+      )}
       
       {dbcSignals.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-3">Parsed Signals</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-medium text-gray-900">Parsed Messages ({dbcSignals.length})</h3>
+            <button
+              className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+              onClick={importAllMessages}
+            >
+              Import All
+            </button>
+          </div>
+          
           <div className="bg-gray-50 p-4 rounded-md overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
@@ -120,6 +259,9 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
                     Message Name
                   </th>
                   <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    DLC
+                  </th>
+                  <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Signals
                   </th>
                   <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -128,8 +270,8 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {dbcSignals.map((message) => (
-                  <tr key={message.id}>
+                {dbcSignals.map((message, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                       {message.id}
                     </td>
@@ -137,12 +279,15 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
                       {message.name}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                      {message.signals.join(', ')}
+                      {message.dlc} bytes
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                      {message.signals.length} ({message.signals.map(s => s.name).join(', ')})
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-blue-600">
                       <button
                         className="text-blue-600 hover:text-blue-800"
-                        onClick={() => alert(`Import message ${message.name}`)}
+                        onClick={() => importMessage(message)}
                       >
                         Import
                       </button>
@@ -152,6 +297,75 @@ export default function DBCUploader({ config, updateConfig, onNext, onPrevious }
               </tbody>
             </table>
           </div>
+          
+          {/* Signal Details Section */}
+          {dbcSignals.length > 0 && dbcSignals[0].signals.length > 0 && (
+            <div className="mt-4 bg-gray-50 p-4 rounded-md">
+              <h4 className="text-md font-medium text-gray-900 mb-2">Signal Details for {dbcSignals[0].name}</h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Start Bit
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Length
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Byte Order
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Signed
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Factor
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Offset
+                      </th>
+                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Unit
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {dbcSignals[0].signals.map((signal, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {signal.name}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                          {signal.startBit}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                          {signal.length}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                          {signal.byteOrder}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                          {signal.isSigned ? 'Yes' : 'No'}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                          {signal.factor}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                          {signal.offset}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                          {signal.unit}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
       
