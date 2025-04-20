@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 export default function MessageEditor({ config, updateConfig, onNext, onPrevious }) {
+  console.log('[MessageEditor] Rendering with config:', config); // Log props on render
   const [selectedMessageIndex, setSelectedMessageIndex] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [messageForm, setMessageForm] = useState({

@@ -28,9 +28,17 @@ export default function Home() {
   });
   
   const updateConfig = (key, value) => {
-    setConfig({ ...config, [key]: value });
+    console.log(`[index.js] Request to update config: ${key} =`, value);
+    setConfig(prevConfig => {
+      const newState = {
+        ...prevConfig,
+        [key]: value
+      };
+      console.log('[index.js] Updated state:', newState);
+      return newState;
+    });
   };
-  
+
   const handleNext = () => {
     if (currentStep < 6) setCurrentStep(currentStep + 1);
   };

@@ -1,4 +1,5 @@
 export default function OSSelector({ config, updateConfig, onNext, onPrevious }) {
+    console.log('[OSSelector] Rendering with config:', config); // Log props on render
     return (
       <div className="p-6 bg-white rounded-md shadow-sm">
         <h2 className="text-2xl font-bold mb-4">Step 2: Select OS & Stack Type</h2>
@@ -93,4 +94,3 @@ export default function OSSelector({ config, updateConfig, onNext, onPrevious })
       </div>
     );
   }
-  

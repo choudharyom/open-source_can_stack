@@ -2,6 +2,7 @@ import { useState } from 'react';
 import LoadingSpinner from '../LoadingSpinner';
 
 export default function DBCUploader({ config, updateConfig, onNext, onPrevious }) {
+  console.log('[DBCUploader] Rendering with config:', config); // Log props on render
   const [isDragging, setIsDragging] = useState(false);
   const [dbcSignals, setDbcSignals] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);

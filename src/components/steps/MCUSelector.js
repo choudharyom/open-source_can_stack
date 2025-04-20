@@ -2,6 +2,7 @@ import { useState } from 'react';
 import FormField from '../FormField';
 
 export default function MCUSelector({ config, updateConfig, onNext }) {
+  console.log('[MCUSelector] Rendering with config:', config); // Log props on render
   const [errors, setErrors] = useState({});
   
   const mcuOptions = [

@@ -5,6 +5,7 @@ import LoadingSpinner from '../LoadingSpinner'; // Import LoadingSpinner
 import codeGenerator, { downloadZIP } from '../../utils/codeGenerator'; // Import default export
 
 export default function PreviewDownload({ config, onPrevious }) {
+    console.log('[PreviewDownload] Rendering with config:', config); // Log props on render
     const [isGenerating, setIsGenerating] = useState(false); // Moved useState inside the component
 
     // Function to handle the download process
