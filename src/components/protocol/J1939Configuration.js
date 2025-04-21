@@ -82,7 +82,7 @@ export default function J1939Configuration({ config, updateConfig }) {
           resolution: 1,
           offset: -125,
           units: '%',
-          description: 'Driver's demand engine - percent torque'
+          description: "Driver's demand engine - percent torque"
         }
       ]
     },
