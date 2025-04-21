@@ -29,31 +29,7 @@ export default function J1939Configuration({ config, updateConfig }) {
     units: '',
     description: ''
   });
-  
-  // J1939 configuration from main config
-  const j1939Config = config.protocolConfig?.j1939 || {
-    preferredAddress: 128,
-    enableAddressClaiming: true,
-    industryGroup: 0,
-    vehicleSystem: 0,
-    vehicleSystemInstance: 0,
-    function: 0,
-    functionInstance: 0,
-    ecuInstance: 0,
-    manufacturerCode: 0,
-    identityNumber: 0,
-    pgns: defaultPgns
-  };
-  
-  // Save J1939 configuration back to main config
-  const saveJ1939Config = (newConfig) => {
-    const currentProtocolConfig = config.protocolConfig || {};
-    updateConfig('protocolConfig', {
-      ...currentProtocolConfig,
-      j1939: newConfig
-    });
-  };
-  
+
   // Default PGNs for common automotive parameters
   const defaultPgns = [
     {
@@ -108,6 +84,30 @@ export default function J1939Configuration({ config, updateConfig }) {
     }
   ];
   
+  // J1939 configuration from main config
+  const j1939Config = config.protocolConfig?.j1939 || {
+    preferredAddress: 128,
+    enableAddressClaiming: true,
+    industryGroup: 0,
+    vehicleSystem: 0,
+    vehicleSystemInstance: 0,
+    function: 0,
+    functionInstance: 0,
+    ecuInstance: 0,
+    manufacturerCode: 0,
+    identityNumber: 0,
+    pgns: defaultPgns
+  };
+  
+  // Save J1939 configuration back to main config
+  const saveJ1939Config = (newConfig) => {
+    const currentProtocolConfig = config.protocolConfig || {};
+    updateConfig('protocolConfig', {
+      ...currentProtocolConfig,
+      j1939: newConfig
+    });
+  };
+    
   // Initialize config with default PGNs if none exist
   useEffect(() => {
     if (!j1939Config.pgns || j1939Config.pgns.length === 0) {
