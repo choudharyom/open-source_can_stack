@@ -16,61 +16,7 @@ export default function CANopenObjectDictionary({ config, updateConfig }) {
     defaultValue: '0',
     description: ''
   });
-  
-  // CANopen configuration from main config
-  const canOpenConfig = config.protocolConfig?.canopen || {
-    nodeId: 1,
-    heartbeatTime: 1000,
-    objects: defaultObjects
-  };
-  
-  // Save CANopen configuration back to main config
-  const saveCanOpenConfig = (newConfig) => {
-    const currentProtocolConfig = config.protocolConfig || {};
-    updateConfig('protocolConfig', {
-      ...currentProtocolConfig,
-      canopen: newConfig
-    });
-  };
-  
-  // Object types
-  const objectTypes = [
-    { value: 'NULL', label: 'NULL - Null' },
-    { value: 'DOMAIN', label: 'DOMAIN - Large variable amount of data' },
-    { value: 'DEFTYPE', label: 'DEFTYPE - Defines a standard data type' },
-    { value: 'DEFSTRUCT', label: 'DEFSTRUCT - Defines a complex data type' },
-    { value: 'VAR', label: 'VAR - Single variable' },
-    { value: 'ARRAY', label: 'ARRAY - Array of variables' },
-    { value: 'RECORD', label: 'RECORD - Record or structure' }
-  ];
-  
-  // Data types
-  const dataTypes = [
-    { value: 'BOOLEAN', label: 'BOOLEAN - Boolean' },
-    { value: 'INTEGER8', label: 'INTEGER8 - 8-bit signed integer' },
-    { value: 'INTEGER16', label: 'INTEGER16 - 16-bit signed integer' },
-    { value: 'INTEGER32', label: 'INTEGER32 - 32-bit signed integer' },
-    { value: 'UNSIGNED8', label: 'UNSIGNED8 - 8-bit unsigned integer' },
-    { value: 'UNSIGNED16', label: 'UNSIGNED16 - 16-bit unsigned integer' },
-    { value: 'UNSIGNED32', label: 'UNSIGNED32 - 32-bit unsigned integer' },
-    { value: 'REAL32', label: 'REAL32 - 32-bit floating point' },
-    { value: 'VISIBLE_STRING', label: 'VISIBLE_STRING - Visible string (ASCII)' },
-    { value: 'OCTET_STRING', label: 'OCTET_STRING - Octet string' },
-    { value: 'UNICODE_STRING', label: 'UNICODE_STRING - Unicode string' },
-    { value: 'TIME_OF_DAY', label: 'TIME_OF_DAY - Time of day' },
-    { value: 'DOMAIN', label: 'DOMAIN - Domain (arbitrary data)' }
-  ];
-  
-  // Access types
-  const accessTypes = [
-    { value: 'ro', label: 'Read Only' },
-    { value: 'wo', label: 'Write Only' },
-    { value: 'rw', label: 'Read/Write' },
-    { value: 'rwr', label: 'Read/Write on process input' },
-    { value: 'rww', label: 'Read/Write on process output' },
-    { value: 'const', label: 'Constant value' }
-  ];
-  
+
   // Default object dictionary entries
   const defaultObjects = [
     {
@@ -155,6 +101,60 @@ export default function CANopenObjectDictionary({ config, updateConfig }) {
     }
   ];
   
+  // CANopen configuration from main config
+  const canOpenConfig = config.protocolConfig?.canopen || {
+    nodeId: 1,
+    heartbeatTime: 1000,
+    objects: defaultObjects
+  };
+  
+  // Save CANopen configuration back to main config
+  const saveCanOpenConfig = (newConfig) => {
+    const currentProtocolConfig = config.protocolConfig || {};
+    updateConfig('protocolConfig', {
+      ...currentProtocolConfig,
+      canopen: newConfig
+    });
+  };
+  
+  // Object types
+  const objectTypes = [
+    { value: 'NULL', label: 'NULL - Null' },
+    { value: 'DOMAIN', label: 'DOMAIN - Large variable amount of data' },
+    { value: 'DEFTYPE', label: 'DEFTYPE - Defines a standard data type' },
+    { value: 'DEFSTRUCT', label: 'DEFSTRUCT - Defines a complex data type' },
+    { value: 'VAR', label: 'VAR - Single variable' },
+    { value: 'ARRAY', label: 'ARRAY - Array of variables' },
+    { value: 'RECORD', label: 'RECORD - Record or structure' }
+  ];
+  
+  // Data types
+  const dataTypes = [
+    { value: 'BOOLEAN', label: 'BOOLEAN - Boolean' },
+    { value: 'INTEGER8', label: 'INTEGER8 - 8-bit signed integer' },
+    { value: 'INTEGER16', label: 'INTEGER16 - 16-bit signed integer' },
+    { value: 'INTEGER32', label: 'INTEGER32 - 32-bit signed integer' },
+    { value: 'UNSIGNED8', label: 'UNSIGNED8 - 8-bit unsigned integer' },
+    { value: 'UNSIGNED16', label: 'UNSIGNED16 - 16-bit unsigned integer' },
+    { value: 'UNSIGNED32', label: 'UNSIGNED32 - 32-bit unsigned integer' },
+    { value: 'REAL32', label: 'REAL32 - 32-bit floating point' },
+    { value: 'VISIBLE_STRING', label: 'VISIBLE_STRING - Visible string (ASCII)' },
+    { value: 'OCTET_STRING', label: 'OCTET_STRING - Octet string' },
+    { value: 'UNICODE_STRING', label: 'UNICODE_STRING - Unicode string' },
+    { value: 'TIME_OF_DAY', label: 'TIME_OF_DAY - Time of day' },
+    { value: 'DOMAIN', label: 'DOMAIN - Domain (arbitrary data)' }
+  ];
+  
+  // Access types
+  const accessTypes = [
+    { value: 'ro', label: 'Read Only' },
+    { value: 'wo', label: 'Write Only' },
+    { value: 'rw', label: 'Read/Write' },
+    { value: 'rwr', label: 'Read/Write on process input' },
+    { value: 'rww', label: 'Read/Write on process output' },
+    { value: 'const', label: 'Constant value' }
+  ];
+    
   // Initialize config with default objects if none exist
   useEffect(() => {
     if (!canOpenConfig.objects || canOpenConfig.objects.length === 0) {
