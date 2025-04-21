@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import FormField from '../FormField';
 import Tooltip from '../Tooltip';
+import UDSDiagnosticBuilder from '../protocol/UDSDiagnosticBuilder';
+import CANopenObjectDictionary from '../protocol/CANopenObjectDictionary';
+import J1939Configuration from '../protocol/J1939Configuration';
 
 export default function ProtocolSelector({ config, updateConfig, onNext, onPrevious }) {
-  console.log('[ProtocolSelector] Rendering with config:', config); // Log props on render
   const [errors, setErrors] = useState({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   
@@ -104,6 +106,7 @@ export default function ProtocolSelector({ config, updateConfig, onNext, onPrevi
     }
   ];
   
+  // Validate and proceed
   const validateAndProceed = () => {
     const newErrors = {};
     
@@ -119,6 +122,7 @@ export default function ProtocolSelector({ config, updateConfig, onNext, onPrevi
     }
   };
   
+  // Handle protocol selection
   const handleProtocolSelect = (protocolId) => {
     // Set default advanced options when selecting a protocol
     const selectedProtocol = protocols.find(p => p.id === protocolId);
@@ -132,11 +136,27 @@ export default function ProtocolSelector({ config, updateConfig, onNext, onPrevi
       updateConfig('protocol', protocolId);
       updateConfig('protocolConfig', advancedConfig);
       setErrors({ ...errors, protocol: null });
-    } else {
-      console.error('[ProtocolSelector] Could not find protocol details for ID:', protocolId);
     }
   };
-  
+
+  // Render protocol-specific configuration tool
+  const renderProtocolTool = () => {
+    switch (config.protocol) {
+      case 'UDS':
+        return <UDSDiagnosticBuilder config={config} updateConfig={updateConfig} />;
+        
+      case 'CANopen':
+        return <CANopenObjectDictionary config={config} updateConfig={updateConfig} />;
+        
+      case 'J1939':
+        return <J1939Configuration config={config} updateConfig={updateConfig} />;
+        
+      default:
+        return null;
+    }
+  };
+
+  // Update advanced option
   const updateAdvancedOption = (optionId, value) => {
     const currentConfig = config.protocolConfig || {};
     updateConfig('protocolConfig', {
@@ -322,6 +342,16 @@ export default function ProtocolSelector({ config, updateConfig, onNext, onPrevi
               </div>
             )}
           </div>
+        </div>
+      )}
+      
+      {/* Protocol-specific tools section */}
+      {config.protocol && (
+        <div className="mb-6">
+          <h3 className="text-md font-semibold text-blue-800 mb-3">
+            {config.protocol} Configuration Tool
+          </h3>
+          {renderProtocolTool()}
         </div>
       )}
       
