@@ -150,4 +150,152 @@ export default function MessageTrafficView({
         
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
-            <label className="mr-2 text-sm text-gray-700">View:
+          <label className="mr-2 text-sm text-gray-700">View:</label>
+            <select
+              className="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              value={viewMode}
+              onChange={(e) => setViewMode(e.target.value)}
+            >
+              <option value="hex">Hexadecimal</option>
+              <option value="dec">Decimal</option>
+              <option value="bin">Binary</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center">
+            <label className="flex items-center text-sm text-gray-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                checked={autoScroll}
+                onChange={(e) => setAutoScroll(e.target.checked)}
+              />
+              <span className="ml-2">Auto-scroll</span>
+            </label>
+          </div>
+          
+          <button
+            className="px-3 py-1.5 bg-gray-200 text-gray-800 text-sm rounded-md hover:bg-gray-300 flex items-center"
+            onClick={() => setFilteredMessages([])}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+            Clear
+          </button>
+        </div>
+      </div>
+      
+      <div className="border border-gray-200 rounded-md">
+        <div className="bg-gray-100 p-3 border-b border-gray-200 flex justify-between">
+          <div className="grid grid-cols-6 gap-4 w-full text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <div className="col-span-1">Timestamp</div>
+            <div className="col-span-1">ID</div>
+            <div className="col-span-1">Name</div>
+            <div className="col-span-1">DLC</div>
+            <div className="col-span-2">Data</div>
+          </div>
+        </div>
+        
+        <div className="max-h-96 overflow-auto">
+          {filteredMessages.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {filteredMessages.map((message, idx) => {
+                const { bgColor, textColor } = getMessageTypeStyle(message);
+                
+                return (
+                  <div 
+                    key={idx} 
+                    className={`p-3 cursor-pointer transition ${
+                      selectedMessage === idx ? 'bg-blue-50' : bgColor
+                    } hover:bg-blue-50`}
+                    onClick={() => setSelectedMessage(idx === selectedMessage ? null : idx)}
+                  >
+                    <div className="grid grid-cols-6 gap-4 w-full text-sm">
+                      <div className="col-span-1 font-mono text-gray-900">
+                        {message.timestamp.toFixed(3)} ms
+                      </div>
+                      <div className={`col-span-1 font-mono font-medium ${textColor}`}>
+                        {message.id}
+                      </div>
+                      <div className="col-span-1 truncate">
+                        {message.name}
+                      </div>
+                      <div className="col-span-1 font-mono">
+                        {message.dlc}
+                      </div>
+                      <div className="col-span-2 font-mono text-xs overflow-hidden whitespace-nowrap overflow-ellipsis">
+                        {formatDataBytes(message.data)}
+                      </div>
+                    </div>
+                    
+                    {selectedMessage === idx && message.signals && message.signals.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <h4 className="text-sm font-medium mb-2">Signal Values</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {message.signals.map((signal, sigIdx) => {
+                            const isTracked = trackedSignals.some(
+                              s => s.messageId === message.id && s.signalName === signal.name
+                            );
+                            
+                            return (
+                              <div 
+                                key={sigIdx} 
+                                className={`flex justify-between items-center p-2 rounded ${
+                                  isTracked ? 'bg-blue-100' : 'bg-gray-100'
+                                }`}
+                              >
+                                <div>
+                                  <div className="font-medium text-sm">{signal.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    Raw: {getFormattedValue(signal.rawValue, 'raw')}
+                                    {signal.physicalValue !== undefined && (
+                                      <> | Phys: {getFormattedValue(signal.physicalValue, 'physical')}
+                                        {signal.unit && ` ${signal.unit}`}
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                <button
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    isTracked 
+                                      ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                                      : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleSignalTracking(message.id, signal.name);
+                                  }}
+                                >
+                                  {isTracked ? 'Untrack' : 'Track'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedMessage === idx && message.error && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
+                          <span className="font-bold">Error: </span>
+                          {message.errorType} - {message.errorDescription}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+          ) : (
+            <div className="p-8 text-center text-gray-500">
+              No messages to display
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
