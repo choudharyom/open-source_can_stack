@@ -590,4 +590,104 @@ export default function MessageComposer({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   value={customMessage.dlc}
                   onChange={(e) => {
-                    const dlc = parseInt
+                    const dlc = parseInt(e.target.value);
+                    const newData = Array(dlc).fill(0).map((_, i) => 
+                      i < customMessage.data.length ? customMessage.data[i] : 0
+                    );
+                    setCustomMessage({
+                      ...customMessage,
+                      dlc,
+                      data: newData
+                    });
+                  }}
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(size => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                  {config.canFD && [12, 16, 20, 24, 32, 48, 64].map(size => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+            
+            <div className="mb-4">
+              <FormField
+                label="Data Bytes (hex)"
+                id="custom-data"
+              >
+                <div className="grid grid-cols-8 gap-2">
+                  {Array.from({ length: customMessage.dlc }, (_, idx) => (
+                    <input
+                      key={idx}
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono"
+                      placeholder="00"
+                      value={(customMessage.data[idx] || 0).toString(16).toUpperCase().padStart(2, '0')}
+                      onChange={(e) => updateDataByte(idx, e.target.value)}
+                      maxLength={2}
+                    />
+                  ))}
+                </div>
+              </FormField>
+            </div>
+            
+            <div className="flex items-center mb-4">
+              <input
+                type="checkbox"
+                id="custom-cyclical"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                checked={customMessage.cyclical}
+                onChange={(e) => setCustomMessage({
+                  ...customMessage,
+                  cyclical: e.target.checked
+                })}
+              />
+              <label htmlFor="custom-cyclical" className="ml-2 text-sm text-gray-700">
+                Send cyclically
+              </label>
+              
+              {customMessage.cyclical && (
+                <div className="ml-4 flex items-center">
+                  <input
+                    type="number"
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    min="10"
+                    step="10"
+                    value={customMessage.cycleTime}
+                    onChange={(e) => setCustomMessage({
+                      ...customMessage,
+                      cycleTime: Math.max(10, parseInt(e.target.value) || 100)
+                    })}
+                  />
+                  <span className="ml-2 text-sm text-gray-700">ms</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                onClick={handleSendCustom}
+                disabled={!customMessage.id}
+              >
+                Send Message
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  return (
+    <div className="space-y-4">
+      <div className="bg-gray-50 p-4 rounded-md">
+        <h3 className="text-md font-medium text-gray-900 mb-2">Message Composer</h3>
+        <p className="text-sm text-gray-500">Compose and send CAN messages manually.</p>
+      </div>
+      
+      {renderProtocolSpecificComposer()}
+    </div>
+  );
+}
