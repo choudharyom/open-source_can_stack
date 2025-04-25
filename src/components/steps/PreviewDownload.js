@@ -146,6 +146,23 @@ export default function PreviewDownload({ config, onPrevious }) {
               )}
             </button>
           </div>
+          <div className="flex justify-between mt-4">
+            <button
+              onClick={handlePrevious}
+              className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setCurrentStep(7)}
+              className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+              </svg>
+              Launch Simulation
+            </button>
+          </div>
         </div>
       </div>
     );
