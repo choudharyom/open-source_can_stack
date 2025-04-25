@@ -10,6 +10,7 @@ import MessageEditor from '../components/steps/MessageEditor';
 import PreviewDownload from '../components/steps/PreviewDownload'; // Added import
 import CodePreview from '../components/CodePreview';
 import Header from '../components/Header';
+import CANSimulator from '../components/simulation/CANSimulator';
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -67,6 +68,22 @@ export default function Home() {
         return <MessageEditor config={config} updateConfig={updateConfig} onNext={handleNext} onPrevious={handlePrevious} />;
       case 6:
         return <PreviewDownload config={config} onPrevious={handlePrevious} />;
+      case 7:
+        return (
+          <div className="p-4 md:p-6 bg-white rounded-md shadow-sm">
+            <h2 className="text-xl md:text-2xl font-bold mb-4">Simulation Environment</h2>
+            <CANSimulator config={config} />
+            
+            <div className="mt-6 flex justify-between">
+              <button
+                onClick={handlePrevious}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                Back to Preview
+              </button>
+            </div>
+          </div>
+        );  
       default:
         return null;
       }
