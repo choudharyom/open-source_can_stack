@@ -645,6 +645,272 @@ export default class SimulationEngine {
     }
     
     // Send NMT command (CANopen)
-    sendNMTCommand(command, nodeId) {
-      // NMT command mapping
-      const nmt
+  sendNMTCommand(command, nodeId) {
+    // NMT command mapping
+    const nmtCommands = {
+      'start': 1,           // Start node
+      'stop': 2,            // Stop node
+      'preoperational': 80, // Enter pre-operational
+      'reset': 81,          // Reset node
+      'reset-comm': 82      // Reset communication
+    };
+    
+    const cmdByte = typeof command === 'string' ? 
+      nmtCommands[command.toLowerCase()] : 
+      parseInt(command);
+    
+    if (!cmdByte) return;
+    
+    // NMT command format: [CMD][NODE-ID]
+    this.simulateMessageTransmission({
+      id: '0x000', // NMT COB-ID
+      name: 'NMT Command',
+      data: [cmdByte, nodeId || 0],
+      source: 'self',
+      target: nodeId ? `node_${nodeId}` : 'broadcast',
+      canopen: true,
+      nmtCommand: true
+    });
+  }
+  
+  // Schedule heartbeat (CANopen)
+  scheduleHeartbeat() {
+    if (!this.running || !this.canopenConfig) return;
+    
+    const interval = this.canopenConfig.heartbeatTime / this.speed;
+    
+    const timeout = setTimeout(() => {
+      if (!this.running) return;
+      
+      // Send heartbeat message
+      // State is 5 (operational) in heartbeat message
+      this.simulateMessageTransmission({
+        id: `0x${(0x700 + this.canopenConfig.nodeId).toString(16).toUpperCase()}`,
+        name: 'Heartbeat',
+        data: [5, 0, 0, 0, 0, 0, 0, 0],
+        source: 'self',
+        target: 'broadcast',
+        canopen: true
+      });
+      
+      // Schedule next heartbeat
+      this.scheduleHeartbeat();
+    }, interval);
+    
+    // Track timeout for cleanup
+    this.activeTimeouts = this.activeTimeouts || [];
+    this.activeTimeouts.push(timeout);
+  }
+  
+  // Send J1939 address claim
+  sendAddressClaim() {
+    if (!this.running || !this.j1939Config) return;
+    
+    // Generate NAME (64-bit)
+    const name = new Uint8Array(8);
+    // Arbitrary identity number
+    name[0] = Math.floor(Math.random() * 256);
+    name[1] = Math.floor(Math.random() * 256);
+    name[2] = Math.floor(Math.random() * 256);
+    // Manufacturer code in bits 11-21
+    name[3] = Math.floor(Math.random() * 256);
+    // Function instance, ECU instance, function
+    name[4] = Math.floor(Math.random() * 256);
+    // Vehicle system
+    name[5] = Math.floor(Math.random() * 256);
+    // Industry group & vehicle system instance
+    name[6] = Math.floor(Math.random() * 256);
+    // Reserved & arbitrary address capable
+    name[7] = 0x80; // Arbitrary address capable
+    
+    // Send address claim message (PGN 0x00EE00)
+    this.simulateMessageTransmission({
+      id: '0xEE00',
+      name: 'Address Claimed',
+      data: Array.from(name),
+      source: 'self',
+      target: 'broadcast'
+    });
+  }
+  
+  // Inject an error into the simulation
+  injectError(errorType) {
+    // Increment error counter
+    this.errorCounter++;
+    
+    // Create error message
+    const errorMessage = {
+      error: true,
+      errorType,
+      errorDescription: this.getErrorDescription(errorType)
+    };
+    
+    // Get a random message to inject error into
+    const messages = this.messages.filter(m => m.cycleTime > 0);
+    
+    if (messages.length > 0) {
+      const targetMessage = messages[Math.floor(Math.random() * messages.length)];
+      
+      // Simulate error transmission
+      this.simulateMessageTransmission({
+        id: targetMessage.id,
+        name: targetMessage.name,
+        data: Array(targetMessage.dlc).fill(0xFF), // Error data
+        source: targetMessage.source,
+        ...errorMessage
+      });
+      
+      // Protocol specific error handling
+      this.handleProtocolSpecificError(errorType, targetMessage);
+    }
+  }
+  
+  // Get description for an error type
+  getErrorDescription(errorType) {
+    const errorDescriptions = {
+      // CAN errors
+      'bit': 'Bit Error - A node trying to send a recessive bit reads back a dominant bit',
+      'stuff': 'Stuff Error - More than 5 consecutive bits of the same value',
+      'crc': 'CRC Error - Calculated CRC does not match received CRC',
+      'form': 'Form Error - A fixed-form bit field contains one or more illegal bits',
+      'ack': 'ACK Error - No receiver acknowledges the transmission',
+      
+      // CANopen errors
+      'sdo-timeout': 'SDO Timeout - No response received within the timeout period',
+      'heartbeat-lost': 'Heartbeat Lost - Expected heartbeat message not received',
+      'nmt-error': 'NMT State Error - Node in incorrect state for command',
+      
+      // J1939 errors
+      'address-claim': 'Address Claim Conflict - Multiple nodes claiming same address',
+      'tp-timeout': 'Transport Protocol Timeout - Multi-packet message timed out',
+      'bam-error': 'BAM Sequence Error - Broadcast Announce Message sequence error',
+      
+      // UDS errors
+      'negative-response': 'Negative Response - ECU rejected the diagnostic request',
+      'timeout': 'Request Timeout - No response received within timeout',
+      'wrong-sequence': 'Wrong Sequence Number - Incorrect sequence in multi-frame transfer'
+    };
+    
+    return errorDescriptions[errorType] || 'Unknown Error';
+  }
+  
+  // Handle protocol-specific error behaviors
+  handleProtocolSpecificError(errorType, targetMessage) {
+    if (this.protocol === 'CANopen') {
+      if (errorType === 'heartbeat-lost') {
+        // Simulate another node's heartbeat loss
+        const nodeId = 2; // Arbitrary node ID
+        
+        // After a delay, trigger emergency message
+        setTimeout(() => {
+          if (!this.running) return;
+          
+          // Send emergency message
+          this.simulateMessageTransmission({
+            id: `0x${(0x80 + nodeId).toString(16).toUpperCase()}`,
+            name: 'Emergency',
+            data: [0x10, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // Heartbeat error code
+            source: `node_${nodeId}`,
+            target: 'broadcast',
+            canopen: true
+          });
+        }, 50);
+      } else if (errorType === 'nmt-error') {
+        // Do nothing special for NMT error
+      } else if (errorType === 'sdo-timeout') {
+        // Send abort transfer message
+        setTimeout(() => {
+          if (!this.running) return;
+          
+          this.simulateMessageTransmission({
+            id: `0x${(0x580 + this.canopenConfig.nodeId).toString(16).toUpperCase()}`,
+            name: 'SDO Abort',
+            data: [0x80, 0x00, 0x00, 0x00, 0x05, 0x04, 0x00, 0x00], // Timeout error
+            source: 'self',
+            target: 'node_2',
+            canopen: true
+          });
+        }, 50);
+      }
+    } else if (this.protocol === 'J1939') {
+      if (errorType === 'address-claim') {
+        // Simulate address claim conflict
+        setTimeout(() => {
+          if (!this.running) return;
+          
+          // Send address claim with same address but different NAME
+          this.simulateMessageTransmission({
+            id: '0xEE00',
+            name: 'Address Claim (Conflict)',
+            data: Array(8).fill(0).map(() => Math.floor(Math.random() * 256)),
+            source: 'ecu_5',
+            target: 'broadcast'
+          });
+        }, 50);
+      } else if (errorType === 'tp-timeout') {
+        // Simulate transport protocol abort
+        setTimeout(() => {
+          if (!this.running) return;
+          
+          // Send connection abort message
+          this.simulateMessageTransmission({
+            id: '0xEC00',
+            name: 'TP.CM_Abort',
+            data: [0xFF, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // Timeout
+            source: 'self',
+            target: 'ecu_5'
+          });
+        }, 50);
+      }
+    } else if (this.protocol === 'UDS') {
+      if (errorType === 'negative-response') {
+        // Simulate negative response
+        setTimeout(() => {
+          if (!this.running) return;
+          
+          this.simulateMessageTransmission({
+            id: this.udsConfig?.txId || '0x7E8',
+            name: 'Negative Response',
+            data: [0x7F, 0x22, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00], // General reject
+            source: 'self',
+            target: 'tester'
+          });
+        }, 20);
+      } else if (errorType === 'timeout') {
+        // No response at all - just let the timeout occur
+      }
+    }
+  }
+  
+  // Update simulation statistics
+  updateStatistics() {
+    if (!this.running) return;
+    
+    // Calculate bus load based on active messages
+    const now = this.simulationTime;
+    const messageBits = this.messageCounter * (11 + 8 * 8 + 15 + 3); // 11 ID + 8 bytes data + 15 overhead + 3 intermission
+    const elapsedSeconds = (now / 1000) || 0.001; // Avoid division by zero
+    
+    // Calculate bit rate (500 kbit/s standard, 1 Mbit/s for CAN FD)
+    const bitRate = this.config.canFD ? 1000000 : 500000;
+    
+    // Calculate bus load percentage
+    const busLoad = (messageBits / (bitRate * elapsedSeconds)) * 100;
+    
+    // Calculate throughput in kbit/s
+    const throughput = (messageBits / elapsedSeconds) / 1000;
+    
+    // Update statistics
+    this.statistics = {
+      busLoad: Math.min(busLoad, 100), // Cap at 100%
+      messageCount: this.messageCounter,
+      errorCount: this.errorCounter,
+      throughput
+    };
+    
+    // Notify statistics listeners
+    if (this.onStatistics) {
+      this.onStatistics(this.statistics);
+    }
+  }
+}
