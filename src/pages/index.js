@@ -1,3 +1,4 @@
+// src/pages/index.js
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Sidebar from '../components/Sidebar';
@@ -27,7 +28,7 @@ export default function Home() {
       { id: '0x200', name: 'Sample Message 2', signals: [] },
     ],
   });
-  
+
   const updateConfig = (key, value) => {
     console.log(`[index.js] Request to update config: ${key} =`, value);
     setConfig(prevConfig => {
@@ -41,18 +42,20 @@ export default function Home() {
   };
 
   const handleNext = () => {
-    if (currentStep < 6) setCurrentStep(currentStep + 1);
+    // Allow moving to step 7 (Simulation) from step 6 (Preview)
+    if (currentStep < 7) setCurrentStep(currentStep + 1);
   };
-  
+
   const handlePrevious = () => {
+    // Allow moving back from step 7 (Simulation) to step 6 (Preview)
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
-  
+
   // Close sidebar when changing steps on mobile
   useEffect(() => {
     setSidebarOpen(false);
   }, [currentStep]);
-  
+
   // Render current step based on currentStep value
   const renderStep = () => {
     switch (currentStep) {
@@ -67,28 +70,29 @@ export default function Home() {
       case 5:
         return <MessageEditor config={config} updateConfig={updateConfig} onNext={handleNext} onPrevious={handlePrevious} />;
       case 6:
-        return <PreviewDownload config={config} onPrevious={handlePrevious} />;
+        // Pass setCurrentStep to PreviewDownload so it can navigate to step 7
+        return <PreviewDownload config={config} onPrevious={handlePrevious} setCurrentStep={setCurrentStep} />;
       case 7:
         return (
           <div className="p-4 md:p-6 bg-white rounded-md shadow-sm">
             <h2 className="text-xl md:text-2xl font-bold mb-4">Simulation Environment</h2>
             <CANSimulator config={config} />
-            
+
             <div className="mt-6 flex justify-between">
               <button
-                onClick={handlePrevious}
+                onClick={() => setCurrentStep(6)} // Go back to Preview (step 6)
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
               >
                 Back to Preview
               </button>
             </div>
           </div>
-        );  
+        );
       default:
         return null;
       }
     };
-    
+
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Head>
@@ -97,28 +101,28 @@ export default function Home() {
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <link rel="icon" href="/favicon.ico" />
         </Head>
-        
+
         <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        
+
         <div className="flex flex-1 overflow-hidden">
           {/* Desktop Sidebar */}
           <div className="hidden md:block">
             <Sidebar currentStep={currentStep} setCurrentStep={setCurrentStep} />
           </div>
-          
+
           {/* Mobile Sidebar */}
-          <MobileSidebar 
-            isOpen={sidebarOpen} 
+          <MobileSidebar
+            isOpen={sidebarOpen}
             setIsOpen={setSidebarOpen}
-            currentStep={currentStep} 
-            setCurrentStep={setCurrentStep} 
+            currentStep={currentStep}
+            setCurrentStep={setCurrentStep}
           />
-          
+
           <main className="flex-1 flex flex-col overflow-auto">
             <div className="flex-1 p-4 md:p-6">
               {renderStep()}
             </div>
-            
+
             <div className="h-48 md:h-64 border-t border-gray-200">
               <CodePreview config={config} />
             </div>

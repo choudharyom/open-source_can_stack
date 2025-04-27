@@ -4,7 +4,8 @@ import LoadingSpinner from '../LoadingSpinner'; // Import LoadingSpinner
 // Import the code generator utility
 import codeGenerator, { downloadZIP } from '../../utils/codeGenerator'; // Import default export
 
-export default function PreviewDownload({ config, onPrevious }) {
+// Destructure props correctly, including onPrevious
+export default function PreviewDownload({ config, onPrevious, setCurrentStep }) { // Added setCurrentStep prop
     console.log('[PreviewDownload] Rendering with config:', config); // Log props on render
     const [isGenerating, setIsGenerating] = useState(false); // Moved useState inside the component
 
@@ -46,7 +47,7 @@ export default function PreviewDownload({ config, onPrevious }) {
       }
       return []; // Return empty list if config is incomplete
     }, [config]); // Recalculate only when config changes
-  
+
     // Render the preview and download section
     // This section will show the configuration summary and generated files
     // and provide buttons to download the generated code or go back to the previous step
@@ -104,7 +105,7 @@ export default function PreviewDownload({ config, onPrevious }) {
               ))}
             </ul>
           </div>
-          
+
           {/* This section will show the messages defined in the DBC file */}
           {/* If no messages are defined, it will show a message indicating that */}
           {/* If messages are defined, it will list them with their IDs and signal counts */}
@@ -114,9 +115,9 @@ export default function PreviewDownload({ config, onPrevious }) {
             <ul className="list-disc pl-5">
               {config.messages.map((message, index) => (
                 <li key={index}>
-                  <span className="font-medium">{message.name}</span> ({message.id}) - 
-                  {message.signals && message.signals.length > 0 
-                    ? ` ${message.signals.length} signals` 
+                  <span className="font-medium">{message.name}</span> ({message.id}) -
+                  {message.signals && message.signals.length > 0
+                    ? ` ${message.signals.length} signals`
                     : ' No signals'}
                 </li>
               ))}
@@ -125,7 +126,7 @@ export default function PreviewDownload({ config, onPrevious }) {
         )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4"> {/* Added mb-4 for spacing */}
             <button
               onClick={handleDownload}
               disabled={isGenerating}
@@ -146,15 +147,16 @@ export default function PreviewDownload({ config, onPrevious }) {
               )}
             </button>
           </div>
+          {/* Navigation Buttons */}
           <div className="flex justify-between mt-4">
             <button
-              onClick={handlePrevious}
+              onClick={onPrevious} // Use the onPrevious prop passed from the parent
               className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition"
             >
               Back
             </button>
             <button
-              onClick={() => setCurrentStep(7)}
+              onClick={() => setCurrentStep(7)} // Use setCurrentStep prop
               className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition flex items-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
